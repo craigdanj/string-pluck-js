@@ -1,4 +1,25 @@
-/* GuitarPluck: dependency-free, browser-only plucked string instrument. */
+/**
+ * GuitarPluck — a dependency-free plucked-string instrument for browsers.
+ * Author: Craig Johnson
+ * License: MIT (see LICENSE)
+ *
+ * Usage (load this file with <script src="guitar-pluck.js"></script>):
+ *
+ *   const guitar = new GuitarPluck({ attack: 0.008, decay: 2.2 });
+ *   document.querySelector('#play').addEventListener('click', async () => {
+ *     await guitar.resume(); // Browsers require a user gesture to start audio.
+ *     guitar.pluck(110);     // Play A2 at 110 Hz.
+ *   });
+ *
+ * Options: attack (seconds), decay (seconds), brightness, damping,
+ * pickPosition, and volume (the last four range from 0 to 1, except
+ * pickPosition, which ranges from 0.05 to 0.5). Optionally pass an existing
+ * AudioContext as `context` and an AudioNode as `destination`.
+ *
+ * Methods: pluck(frequency, velocity = 1, overrides = {}), setParams({...}),
+ * resume(), stopAll(), and dispose(). Frequency is in Hz (40–2000).
+ * Parameters changed with setParams() affect subsequent notes.
+ */
 (function (root) {
   "use strict";
   const defaults = {
@@ -20,6 +41,7 @@
       this.setParams(options);
       this.voices = new Set();
     }
+
     setParams(params = {}) {
       this.params = { ...defaults, ...(this.params || {}), ...params };
       const p = this.params;
@@ -31,14 +53,18 @@
       p.volume = clamp(p.volume, 0, 1);
       return this;
     }
+
     async resume() {
       if (this.context.state === "suspended") await this.context.resume();
     }
+
     pluck(frequency, velocity = 1, overrides = {}) {
       const ctx = this.context;
       const hz = Number(frequency);
+
       if (!Number.isFinite(hz) || hz < 40 || hz > 2000)
         throw new RangeError("frequency must be between 40 and 2000 Hz");
+
       const p = { ...this.params, ...overrides };
       const attack = clamp(p.attack, 0.001, 0.5);
       const decay = clamp(p.decay, 0.15, 8);
@@ -56,20 +82,27 @@
       const delay = new Float32Array(period);
       // A pluck displaces a string into a triangle at the chosen picking position.
       const peak = Math.max(1, Math.round(period * position));
+
       for (let i = 0; i < period; i++)
         delay[i] = i < peak ? i / peak : (period - i) / (period - peak);
+
       let mean = 0;
+
       for (const n of delay) mean += n;
+
       mean /= period;
+
       for (let i = 0; i < period; i++)
         delay[i] =
           (delay[i] - mean) * 0.85 +
           (Math.random() * 2 - 1) * brightness * 0.15;
+
       let cursor = 0,
         previous = 0;
       // Karplus-Strong delay loop; damping sets high-frequency loss on each pass.
       const blend = 0.05 + damping * 0.8;
       const feedback = Math.exp(-period / (sampleRate * decay * 0.55));
+
       for (let i = 0; i < length; i++) {
         const current = delay[cursor];
         data[i] = current;
@@ -78,6 +111,7 @@
         previous = filtered;
         cursor = (cursor + 1) % period;
       }
+
       const source = ctx.createBufferSource();
       source.buffer = buffer;
       const tone = ctx.createBiquadFilter();
@@ -95,17 +129,23 @@
       gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
       source.connect(tone).connect(gain).connect(this.output);
       const voice = { source, gain, tone };
+
       this.voices.add(voice);
+
       source.onended = () => {
         source.disconnect();
         tone.disconnect();
         gain.disconnect();
         this.voices.delete(voice);
       };
+
       source.start(now);
+
       source.stop(now + duration + 0.02);
+
       return voice;
     }
+
     stopAll() {
       for (const voice of this.voices) {
         try {
@@ -115,6 +155,7 @@
         }
       }
     }
+
     async dispose() {
       this.stopAll();
       this.output.disconnect();

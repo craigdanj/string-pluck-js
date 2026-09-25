@@ -37,6 +37,27 @@
         text-transform: uppercase;
         color: #e5ae65;
       }
+      .header-links {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+      .repo-link {
+        text-decoration: none;
+        color: #f4dfbf;
+        border: 1px solid #b68b5a;
+        border-radius: 30px;
+        padding: 8px 12px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .repo-link:hover,
+      .repo-link:focus-visible {
+        background: #b68b5a;
+        color: #151a1b;
+      }
       .pill {
         font-size: 12px;
         border: 1px solid #71766c;
@@ -210,9 +231,18 @@
     <main class="wrap">
       <header>
         <div class="brand">
-          Guitar Pluck <span style="color: #8c9588">/ lab</span>
+          Guitar Pluck <span style="color: #8c9588"> JS</span>
         </div>
-        <span class="pill">Web Audio · no dependencies</span>
+        <div class="header-links">
+          <a
+            class="repo-link"
+            href="https://github.com/craigdanj/guitar-pluck-js"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="View guitar-pluck-js on GitHub"
+            >GitHub ↗</a
+          ><span class="pill">Web Audio · no dependencies</span>
+        </div>
       </header>
       <h1>Make a string <em>sing.</em></h1>
       <p class="intro">
