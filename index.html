@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Guitar Pluck · Browser instrument</title>
+    <style>
+      :root {
+        font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+        color: #ede8d9;
+        background: #151a1b;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          radial-gradient(circle at 80% 0%, #30342c, transparent 48%), #151a1b;
+      }
+      .wrap {
+        max-width: 1080px;
+        margin: auto;
+        padding: 32px 24px 70px;
+      }
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #434741;
+        padding-bottom: 18px;
+      }
+      .brand {
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #e5ae65;
+      }
+      .pill {
+        font-size: 12px;
+        border: 1px solid #71766c;
+        border-radius: 30px;
+        padding: 8px 12px;
+        color: #c6c5b8;
+      }
+      h1 {
+        font-size: clamp(42px, 7vw, 80px);
+        line-height: 1;
+        letter-spacing: -0.065em;
+        margin: 70px 0 16px;
+      }
+      h1 em {
+        font-style: normal;
+        color: #e5ae65;
+      }
+      .intro {
+        max-width: 550px;
+        color: #b9bdb3;
+        line-height: 1.65;
+        margin-bottom: 40px;
+      }
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1.45fr) minmax(280px, 1fr);
+        gap: 20px;
+      }
+      .card {
+        background: #222827;
+        border: 1px solid #404844;
+        border-radius: 20px;
+        padding: 26px;
+        box-shadow: 0 18px 45px #0002;
+      }
+      .card h2 {
+        font-size: 13px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #dfb077;
+        margin: 0 0 22px;
+      }
+      .string {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        background: none;
+        border: 0;
+        color: #f5e9d7;
+        padding: 13px 4px;
+        text-align: left;
+        cursor: pointer;
+        touch-action: manipulation;
+      }
+      .string:hover,
+      .string:focus-visible {
+        color: #ffc785;
+        outline: none;
+      }
+      .note {
+        font-size: 18px;
+        font-weight: 700;
+        width: 32px;
+      }
+      .wire {
+        position: relative;
+        flex: 1;
+        height: 24px;
+        display: flex;
+        align-items: center;
+      }
+      .wire:before {
+        content: "";
+        display: block;
+        width: 100%;
+        height: var(--thickness);
+        background: linear-gradient(90deg, #6d746c, #efd1a1 35%, #b78854);
+        box-shadow: 0 2px 6px #0009;
+      }
+      .string.active .wire:before {
+        animation: vibrate 0.11s ease-in-out 4 alternate;
+        background: #ffd190;
+      }
+      @keyframes vibrate {
+        to {
+          transform: translateY(5px);
+        }
+      }
+      .freq {
+        width: 55px;
+        text-align: right;
+        color: #a8afa3;
+        font-size: 12px;
+      }
+      label {
+        display: flex;
+        justify-content: space-between;
+        font-size: 14px;
+        margin: 18px 0 9px;
+      }
+      output {
+        color: #e8b572;
+        font-variant-numeric: tabular-nums;
+      }
+      input[type="range"] {
+        width: 100%;
+        accent-color: #e9b672;
+        cursor: pointer;
+      }
+      .hint {
+        font-size: 13px;
+        color: #aab0a5;
+        line-height: 1.6;
+        margin: 26px 0 0;
+      }
+      .presets {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 26px;
+      }
+      .presets button,
+      .actions button {
+        background: #353d39;
+        border: 1px solid #596058;
+        border-radius: 9px;
+        color: #f4e6d2;
+        padding: 9px 13px;
+        cursor: pointer;
+      }
+      .presets button:hover,
+      .actions button:hover {
+        border-color: #e2ae68;
+      }
+      .presets button.selected {
+        background: #ad7040;
+        border-color: #e8af6d;
+        color: #fff;
+      }
+      .actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+      }
+      .actions button {
+        flex: 1;
+      }
+      .footer {
+        color: #818c83;
+        font-size: 13px;
+        margin-top: 26px;
+      }
+      @media (max-width: 720px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+        .wrap {
+          padding: 22px 16px 50px;
+        }
+        h1 {
+          margin-top: 48px;
+        }
+        .card {
+          padding: 21px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <header>
+        <div class="brand">
+          Guitar Pluck <span style="color: #8c9588">/ lab</span>
+        </div>
+        <span class="pill">Web Audio · no dependencies</span>
+      </header>
+      <h1>Make a string <em>sing.</em></h1>
+      <p class="intro">
+        A small plucked-string synthesizer for the browser. Tap a string, shape
+        the response, and find your sound.
+      </p>
+      <div class="layout">
+        <section class="card">
+          <h2>Standard tuning · E A D G B E</h2>
+          <div id="strings"></div>
+          <div class="actions">
+            <button type="button" id="strum">↓ Strum all strings</button
+            ><button type="button" id="stop">Stop</button>
+          </div>
+          <p class="hint">
+            Tap or click a string. Keyboard: 1–6 for individual strings, Space
+            to strum.
+          </p>
+        </section>
+        <section class="card">
+          <h2>Sound controls</h2>
+          <div id="controls"></div>
+          <div class="presets" id="presets"></div>
+          <p class="hint">
+            Attack controls the initial fade. Decay controls sustain. Damping
+            softens repeated string vibrations; pick position changes the
+            harmonic shape.
+          </p>
+        </section>
+      </div>
+      <p class="footer">
+        Runs locally in modern browsers. Sound starts on your first interaction.
+      </p>
+    </main>
+    <script src="./guitar-pluck.js"></script>
+    <script>
+      const instrument = new GuitarPluck();
+      const strings = [
+        { note: "E₂", hz: 82.41 },
+        { note: "A₂", hz: 110 },
+        { note: "D₃", hz: 146.83 },
+        { note: "G₃", hz: 196 },
+        { note: "B₃", hz: 246.94 },
+        { note: "E₄", hz: 329.63 },
+      ];
+      const specs = [
+        {
+          key: "attack",
+          label: "Attack",
+          min: 0.001,
+          max: 0.25,
+          step: 0.001,
+          unit: " s",
+        },
+        {
+          key: "decay",
+          label: "Decay",
+          min: 0.15,
+          max: 6,
+          step: 0.01,
+          unit: " s",
+        },
+        {
+          key: "brightness",
+          label: "Brightness",
+          min: 0,
+          max: 1,
+          step: 0.01,
+          unit: "",
+        },
+        {
+          key: "damping",
+          label: "Damping",
+          min: 0,
+          max: 1,
+          step: 0.01,
+          unit: "",
+        },
+        {
+          key: "pickPosition",
+          label: "Pick position",
+          min: 0.05,
+          max: 0.5,
+          step: 0.01,
+          unit: "",
+        },
+        {
+          key: "volume",
+          label: "Volume",
+          min: 0,
+          max: 1,
+          step: 0.01,
+          unit: "",
+        },
+      ];
+      const presets = {
+        Balanced: {
+          attack: 0.008,
+          decay: 2.2,
+          brightness: 0.65,
+          damping: 0.28,
+          pickPosition: 0.22,
+          volume: 0.7,
+        },
+        Warm: {
+          attack: 0.018,
+          decay: 2.7,
+          brightness: 0.3,
+          damping: 0.55,
+          pickPosition: 0.35,
+          volume: 0.75,
+        },
+        Bright: {
+          attack: 0.003,
+          decay: 2.5,
+          brightness: 0.95,
+          damping: 0.09,
+          pickPosition: 0.13,
+          volume: 0.65,
+        },
+        Muted: {
+          attack: 0.006,
+          decay: 0.55,
+          brightness: 0.38,
+          damping: 0.85,
+          pickPosition: 0.29,
+          volume: 0.75,
+        },
+      };
+      const stringsEl = document.querySelector("#strings");
+      strings.forEach((s, i) => {
+        const b = document.createElement("button");
+        b.className = "string";
+        b.type = "button";
+        b.setAttribute("aria-label", `Pluck ${s.note}, ${s.hz} hertz`);
+        b.innerHTML = `<span class="note">${s.note}</span><span class="wire" style="--thickness:${Math.max(1, 3.6 - i * 0.45)}px"></span><span class="freq">${s.hz.toFixed(0)} Hz</span>`;
+        b.addEventListener("click", () => play(i, b));
+        stringsEl.append(b);
+      });
+      async function play(i, button) {
+        await instrument.resume();
+        instrument.pluck(strings[i].hz);
+        button ||= stringsEl.children[i];
+        button.classList.remove("active");
+        void button.offsetWidth;
+        button.classList.add("active");
+        setTimeout(() => button.classList.remove("active"), 550);
+      }
+      async function strum() {
+        await instrument.resume();
+        strings.forEach((_, i) => setTimeout(() => play(i), i * 62));
+      }
+      document.querySelector("#strum").addEventListener("click", strum);
+      document
+        .querySelector("#stop")
+        .addEventListener("click", () => instrument.stopAll());
+      const controls = document.querySelector("#controls");
+      function sync() {
+        for (const s of specs) {
+          const input = document.getElementById(s.key);
+          input.value = instrument.params[s.key];
+          document.getElementById(s.key + "Value").value =
+            Number(input.value).toFixed(s.key === "attack" ? 3 : 2) + s.unit;
+        }
+      }
+      for (const s of specs) {
+        const row = document.createElement("div");
+        row.innerHTML = `<label for="${s.key}"><span>${s.label}</span><output id="${s.key}Value"></output></label><input id="${s.key}" type="range" min="${s.min}" max="${s.max}" step="${s.step}">`;
+        controls.append(row);
+        row.querySelector("input").addEventListener("input", (e) => {
+          instrument.setParams({ [s.key]: Number(e.target.value) });
+          document
+            .querySelectorAll(".presets button")
+            .forEach((b) => b.classList.remove("selected"));
+          sync();
+        });
+      }
+      sync();
+      const presetsEl = document.querySelector("#presets");
+      for (const [name, params] of Object.entries(presets)) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.textContent = name;
+        b.addEventListener("click", () => {
+          instrument.setParams(params);
+          sync();
+          presetsEl
+            .querySelectorAll("button")
+            .forEach((x) => x.classList.toggle("selected", x === b));
+        });
+        presetsEl.append(b);
+      }
+      presetsEl.firstChild.classList.add("selected");
+      document.addEventListener("keydown", (e) => {
+        if (
+          e.repeat ||
+          ["INPUT", "BUTTON"].includes(document.activeElement.tagName)
+        )
+          return;
+        if (/^[1-6]$/.test(e.key)) play(Number(e.key) - 1);
+        if (e.code === "Space") {
+          e.preventDefault();
+          strum();
+        }
+      });
+    </script>
+  </body>
+</html>
